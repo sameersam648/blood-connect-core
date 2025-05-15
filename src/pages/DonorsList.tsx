@@ -1,0 +1,248 @@
+
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Eye, Plus, Search, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+// Mock donors data
+const mockDonors = [
+  {
+    id: "1",
+    name: "John Doe",
+    email: "john.doe@example.com",
+    phone: "(555) 123-4567",
+    bloodType: "O+",
+    lastDonation: "2023-04-15",
+    status: "active",
+    donationsCount: 4,
+  },
+  {
+    id: "2",
+    name: "Jane Smith",
+    email: "jane.smith@example.com",
+    phone: "(555) 987-6543",
+    bloodType: "A-",
+    lastDonation: "2023-03-22",
+    status: "active",
+    donationsCount: 2,
+  },
+  {
+    id: "3",
+    name: "Robert Johnson",
+    email: "robert.johnson@example.com",
+    phone: "(555) 456-7890",
+    bloodType: "B+",
+    lastDonation: "2023-05-01",
+    status: "inactive",
+    donationsCount: 5,
+  },
+  {
+    id: "4",
+    name: "Emily Davis",
+    email: "emily.davis@example.com",
+    phone: "(555) 234-5678",
+    bloodType: "AB+",
+    lastDonation: "2023-01-10",
+    status: "active",
+    donationsCount: 3,
+  },
+  {
+    id: "5",
+    name: "Michael Wilson",
+    email: "michael.wilson@example.com",
+    phone: "(555) 876-5432",
+    bloodType: "O-",
+    lastDonation: "2023-02-28",
+    status: "active",
+    donationsCount: 7,
+  },
+  {
+    id: "6",
+    name: "Sarah Brown",
+    email: "sarah.brown@example.com",
+    phone: "(555) 345-6789",
+    bloodType: "A+",
+    lastDonation: "2023-04-05",
+    status: "inactive",
+    donationsCount: 1,
+  },
+];
+
+const DonorsList = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [bloodTypeFilter, setBloodTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const filteredDonors = mockDonors.filter((donor) => {
+    const matchesSearch =
+      donor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      donor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      donor.phone.includes(searchTerm);
+
+    const matchesBloodType =
+      bloodTypeFilter === "all" || donor.bloodType === bloodTypeFilter;
+
+    const matchesStatus =
+      statusFilter === "all" || donor.status === statusFilter;
+
+    return matchesSearch && matchesBloodType && matchesStatus;
+  });
+
+  return (
+    <div className="pt-16 animate-fade-in">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-1">Donors</h1>
+          <p className="text-gray-500">Manage and view all blood donors</p>
+        </div>
+        <Button asChild className="mt-4 md:mt-0 bg-red-500 hover:bg-red-600">
+          <Link to="/add-donor">
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Donor
+          </Link>
+        </Button>
+      </div>
+
+      <Card className="mb-8">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Filter Donors</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <div className="relative">
+                <Search className="h-4 w-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="Search donors..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <div>
+              <Select
+                value={bloodTypeFilter}
+                onValueChange={setBloodTypeFilter}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Blood Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Blood Types</SelectItem>
+                  <SelectItem value="A+">A+</SelectItem>
+                  <SelectItem value="A-">A-</SelectItem>
+                  <SelectItem value="B+">B+</SelectItem>
+                  <SelectItem value="B-">B-</SelectItem>
+                  <SelectItem value="AB+">AB+</SelectItem>
+                  <SelectItem value="AB-">AB-</SelectItem>
+                  <SelectItem value="O+">O+</SelectItem>
+                  <SelectItem value="O-">O-</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Blood Type</TableHead>
+              <TableHead>Last Donation</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Donations</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredDonors.length > 0 ? (
+              filteredDonors.map((donor) => (
+                <TableRow key={donor.id}>
+                  <TableCell className="font-medium">
+                    <div>{donor.name}</div>
+                    <div className="text-sm text-gray-500">{donor.email}</div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="bg-red-50 text-red-700 hover:bg-red-50">
+                      {donor.bloodType}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {new Date(donor.lastDonation).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      className={
+                        donor.status === "active"
+                          ? "bg-green-100 text-green-800 hover:bg-green-100"
+                          : "bg-gray-100 text-gray-800 hover:bg-gray-100"
+                      }
+                    >
+                      {donor.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>{donor.donationsCount}</TableCell>
+                  <TableCell>
+                    <Button variant="ghost" size="sm" asChild>
+                      <Link to={`/donors/${donor.id}`}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Link>
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center py-8">
+                  <div className="flex flex-col items-center justify-center text-gray-500">
+                    <Users className="h-12 w-12 mb-2 opacity-20" />
+                    <h3 className="font-medium mb-1">No donors found</h3>
+                    <p className="text-sm">
+                      Try adjusting your search or filters
+                    </p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+};
+
+export default DonorsList;
