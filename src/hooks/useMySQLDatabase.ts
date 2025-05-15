@@ -1,4 +1,3 @@
-
 /**
  * Hook for MySQL database connection
  * 
@@ -6,6 +5,8 @@
  * In a real application, you would connect to MySQL using a server-side API
  * since direct database connections from the browser are not secure.
  */
+
+import axios from 'axios';
 
 interface MySQLConfig {
   host: string;
@@ -32,93 +33,171 @@ export interface Donor {
   status: "active" | "inactive";
 }
 
+// Create axios instance
+const api = axios.create({
+  baseURL: 'http://localhost:3001/api',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 export const useMySQLDatabase = () => {
-  // This is a placeholder for demonstration purposes
-  // In a real app, you would make API calls to a backend server
-  
-  const saveDonor = async (donor: any) => {
-    console.log("Saving donor to MySQL database:", donor);
-    // Simulate API request delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+  const saveDonor = async (donor: Donor) => {
     try {
-      // In a real application, you would make an API call:
-      // return await api.post('/api/donors', donor);
+      const response = await api.post('/donors', donor);
       
-      localStorage.setItem(`donor_${Date.now()}`, JSON.stringify(donor));
-      return { success: true, id: Date.now().toString() };
+      if (response.status >= 200 && response.status < 300) {
+        return { 
+          success: true, 
+          id: response.data.id 
+        };
+      } else {
+        console.error("Error saving donor, response:", response);
+        return { 
+          success: false, 
+          error: response.data.error || 'Unknown error occurred' 
+        };
+      }
     } catch (error) {
       console.error("Error saving donor:", error);
-      return { success: false, error: "Failed to save donor" };
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to save donor' 
+      };
     }
   };
 
   const getDonors = async () => {
-    console.log("Fetching donors from MySQL database");
-    // Simulate API request delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
     try {
-      // In a real application, you would make an API call:
-      // return await api.get('/api/donors');
+      const response = await api.get('/donors');
       
-      // Get saved donors from localStorage for demo purposes
-      const donors: Donor[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('donor_')) {
-          const donorData = localStorage.getItem(key);
-          if (donorData) {
-            donors.push(JSON.parse(donorData));
-          }
-        }
+      if (response.status === 200) {
+        return { 
+          success: true, 
+          donors: response.data.donors || [] 
+        };
+      } else {
+        console.error("Error fetching donors, response:", response);
+        return { 
+          success: false, 
+          donors: [], 
+          error: response.data.error || 'Unknown error occurred' 
+        };
       }
-      
-      return { success: true, donors };
     } catch (error) {
       console.error("Error fetching donors:", error);
-      return { success: false, donors: [], error: "Failed to fetch donors" };
+      return { 
+        success: false, 
+        donors: [], 
+        error: error instanceof Error ? error.message : 'Failed to fetch donors' 
+      };
     }
   };
 
-  const updateDonor = async (id: string, donor: any) => {
-    console.log(`Updating donor ${id} in MySQL database:`, donor);
-    // Simulate API request delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+  const getDonorById = async (id: string) => {
     try {
-      // In a real application, you would make an API call:
-      // return await api.put(`/api/donors/${id}`, donor);
+      const response = await api.get(`/donors/${id}`);
       
-      // For demo, we just log the update
-      return { success: true };
+      if (response.status === 200) {
+        return { 
+          success: true, 
+          donor: response.data.donor 
+        };
+      } else {
+        console.error(`Error fetching donor ${id}, response:`, response);
+        return { 
+          success: false, 
+          donor: null, 
+          error: response.data.error || 'Unknown error occurred' 
+        };
+      }
+    } catch (error) {
+      console.error(`Error fetching donor ${id}:`, error);
+      return { 
+        success: false, 
+        donor: null, 
+        error: error instanceof Error ? error.message : 'Failed to fetch donor' 
+      };
+    }
+  };
+
+  const updateDonor = async (id: string, donor: Donor) => {
+    try {
+      const response = await api.put(`/donors/${id}`, donor);
+      
+      if (response.status === 200) {
+        return { success: true };
+      } else {
+        console.error(`Error updating donor ${id}, response:`, response);
+        return { 
+          success: false, 
+          error: response.data.error || 'Unknown error occurred' 
+        };
+      }
     } catch (error) {
       console.error(`Error updating donor ${id}:`, error);
-      return { success: false, error: "Failed to update donor" };
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to update donor' 
+      };
     }
   };
 
   const deleteDonor = async (id: string) => {
-    console.log(`Deleting donor ${id} from MySQL database`);
-    // Simulate API request delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
     try {
-      // In a real application, you would make an API call:
-      // return await api.delete(`/api/donors/${id}`);
+      const response = await api.delete(`/donors/${id}`);
       
-      // For demo, we just log the deletion
-      return { success: true };
+      if (response.status === 200) {
+        return { success: true };
+      } else {
+        console.error(`Error deleting donor ${id}, response:`, response);
+        return { 
+          success: false, 
+          error: response.data.error || 'Unknown error occurred' 
+        };
+      }
     } catch (error) {
       console.error(`Error deleting donor ${id}:`, error);
-      return { success: false, error: "Failed to delete donor" };
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Failed to delete donor' 
+      };
+    }
+  };
+
+  const getStats = async () => {
+    try {
+      const response = await api.get('/stats');
+      
+      if (response.status === 200) {
+        return { 
+          success: true, 
+          stats: response.data.stats 
+        };
+      } else {
+        console.error("Error fetching stats, response:", response);
+        return { 
+          success: false, 
+          stats: null, 
+          error: response.data.error || 'Unknown error occurred' 
+        };
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      return { 
+        success: false, 
+        stats: null, 
+        error: error instanceof Error ? error.message : 'Failed to fetch stats' 
+      };
     }
   };
 
   return {
     saveDonor,
     getDonors,
+    getDonorById,
     updateDonor,
-    deleteDonor
+    deleteDonor,
+    getStats
   };
 };

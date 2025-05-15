@@ -1,32 +1,19 @@
-
 import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
-import { useMySQLDatabase } from "@/hooks/useMySQLDatabase";
+import { useMySQLDatabase, Donor as DbDonor } from "@/hooks/useMySQLDatabase";
 import { useToast } from "@/components/ui/use-toast";
 
-// Define the donor type
-export interface Donor {
-  id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  bloodType: string;
-  age: string;
-  weight: string;
-  lastDonation: string;
-  address: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  medicalConditions: string;
-  status: "active" | "inactive";
-}
+// Use the imported type
+type Donor = DbDonor;
 
 interface DonorContextType {
   donors: Donor[];
   addDonor: (donor: Omit<Donor, "id" | "status">) => Promise<void>;
+  updateDonor: (id: string, donor: Donor) => Promise<void>;
+  deleteDonor: (id: string) => Promise<void>;
   getDonorById: (id: string) => Donor | undefined;
   loading: boolean;
+  stats: any;
+  refreshDonors: () => Promise<void>;
 }
 
 const DonorContext = createContext<DonorContextType | undefined>(undefined);
@@ -104,56 +91,77 @@ const initialDonors: Donor[] = [
 ];
 
 export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [donors, setDonors] = useState<Donor[]>(initialDonors);
+  const [donors, setDonors] = useState<Donor[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const { toast } = useToast();
-  const { saveDonor, getDonors, updateDonor, deleteDonor } = useMySQLDatabase();
+  const { 
+    saveDonor, 
+    getDonors, 
+    updateDonor: apiUpdateDonor, 
+    deleteDonor: apiDeleteDonor,
+    getStats: apiGetStats 
+  } = useMySQLDatabase();
 
-  // Load donors from MySQL database on component mount
-  useEffect(() => {
-    const fetchDonors = async () => {
-      try {
-        setLoading(true);
-        const response = await getDonors();
-        if (response.success && response.donors.length > 0) {
-          setDonors(response.donors);
-        }
-      } catch (error) {
-        console.error("Error fetching donors:", error);
+  const fetchDonors = async () => {
+    try {
+      setLoading(true);
+      const response = await getDonors();
+      if (response.success) {
+        setDonors(response.donors);
+      } else {
         toast({
           title: "Error",
-          description: "Failed to fetch donors from the database.",
+          description: response.error || "Failed to fetch donors",
           variant: "destructive",
         });
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching donors:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch donors from the database.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const fetchStats = async () => {
+    try {
+      const response = await apiGetStats();
+      if (response.success) {
+        setStats(response.stats);
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+    }
+  };
+
+  // Load donors and stats from MySQL database on component mount
+  useEffect(() => {
     fetchDonors();
-  }, [getDonors, toast]);
+    fetchStats();
+  }, []);
 
   const addDonor = async (donorData: Omit<Donor, "id" | "status">) => {
     setLoading(true);
     
     try {
-      const newDonor: Donor = {
+      const newDonor = {
         ...donorData,
-        id: (donors.length + 1).toString(), // Fallback ID in case MySQL save fails
-        status: "active",
+        id: "", // Will be assigned by the database
+        status: "active" as const,
       };
       
       // Save to MySQL database
       const response = await saveDonor(newDonor);
       
       if (response.success) {
-        // Update donor with the ID from database
-        const savedDonor: Donor = {
-          ...newDonor,
-          id: response.id || newDonor.id,
-        };
-        
-        setDonors((prevDonors) => [...prevDonors, savedDonor]);
+        // Refresh donors list instead of optimistically updating the state
+        await fetchDonors();
+        await fetchStats();
         
         toast({
           title: "Success",
@@ -162,7 +170,7 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       } else {
         toast({
           title: "Error",
-          description: "Failed to save donor to database",
+          description: response.error || "Failed to save donor to database",
           variant: "destructive",
         });
       }
@@ -178,12 +186,96 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   };
 
+  const updateDonor = async (id: string, donor: Donor) => {
+    setLoading(true);
+    
+    try {
+      const response = await apiUpdateDonor(id, donor);
+      
+      if (response.success) {
+        // Refresh donors list instead of optimistically updating the state
+        await fetchDonors();
+        await fetchStats();
+        
+        toast({
+          title: "Success",
+          description: "Donor updated successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Failed to update donor",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating donor:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteDonor = async (id: string) => {
+    setLoading(true);
+    
+    try {
+      const response = await apiDeleteDonor(id);
+      
+      if (response.success) {
+        // Refresh donors list instead of optimistically updating the state
+        await fetchDonors();
+        await fetchStats();
+        
+        toast({
+          title: "Success",
+          description: "Donor deleted successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: response.error || "Failed to delete donor",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting donor:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getDonorById = (id: string) => {
     return donors.find((donor) => donor.id === id);
   };
 
+  const refreshDonors = async () => {
+    await fetchDonors();
+    await fetchStats();
+  };
+
   return (
-    <DonorContext.Provider value={{ donors, addDonor, getDonorById, loading }}>
+    <DonorContext.Provider 
+      value={{ 
+        donors, 
+        addDonor, 
+        updateDonor, 
+        deleteDonor, 
+        getDonorById, 
+        loading, 
+        stats,
+        refreshDonors
+      }}
+    >
       {children}
     </DonorContext.Provider>
   );

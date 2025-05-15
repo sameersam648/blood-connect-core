@@ -1,25 +1,39 @@
-
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useDonors } from "@/contexts/DonorContext";
 
-const RecentDonors = () => {
+interface RecentDonor {
+  id: string;
+  firstName: string;
+  lastName: string;
+  bloodType: string;
+  lastDonation?: string;
+  email?: string;
+}
+
+interface RecentDonorsProps {
+  recentDonors?: RecentDonor[];
+}
+
+const RecentDonors = ({ recentDonors = [] }: RecentDonorsProps) => {
   const { donors } = useDonors();
   
-  // Get most recent donors (up to 4)
-  const recentDonors = [...donors]
-    .sort((a, b) => {
-      // Sort by id in descending order (most recent first)
-      return parseInt(b.id) - parseInt(a.id);
-    })
-    .slice(0, 4);
+  // Use provided recentDonors, or if empty, get most recent donors from context
+  const donorsToDisplay = recentDonors.length > 0 
+    ? recentDonors
+    : [...donors]
+        .sort((a, b) => {
+          // Sort by id in descending order (most recent first)
+          return parseInt(b.id) - parseInt(a.id);
+        })
+        .slice(0, 4);
 
   return (
     <div className="space-y-4">
-      {recentDonors.length > 0 ? (
-        recentDonors.map((donor) => (
+      {donorsToDisplay.length > 0 ? (
+        donorsToDisplay.map((donor) => (
           <div
             key={donor.id}
             className="flex items-center justify-between p-4 rounded-lg border border-gray-100 hover:bg-gray-50 donor-card"
@@ -32,7 +46,7 @@ const RecentDonors = () => {
               </Avatar>
               <div>
                 <div className="font-medium">{donor.firstName} {donor.lastName}</div>
-                <div className="text-sm text-gray-500">{donor.email}</div>
+                {donor.email && <div className="text-sm text-gray-500">{donor.email}</div>}
               </div>
             </div>
 
