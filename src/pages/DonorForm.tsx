@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -20,10 +19,12 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { useDonors } from "@/contexts/DonorContext";
 
 const DonorForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { addDonor } = useDonors();
   
   const [formData, setFormData] = useState({
     firstName: "",
@@ -53,8 +54,8 @@ const DonorForm = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // This would normally make an API call to save the donor
-    console.log("Submitting donor data:", formData);
+    // Add donor to context (which would normally save to MySQL)
+    addDonor(formData);
     
     toast({
       title: "Donor added successfully",

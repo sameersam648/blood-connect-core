@@ -61,8 +61,10 @@ const Dashboard = () => {
                     <span className="font-medium">Type {bloodType.type}</span>
                     <span className="text-gray-500">{bloodType.count} units</span>
                   </div>
-                  <Progress value={bloodType.percentage} className="h-2" 
-                    indicatorClassName={bloodType.percentage < 30 ? "bg-red-500" : "bg-red-400"} />
+                  <Progress 
+                    value={bloodType.percentage} 
+                    className={`h-2 ${bloodType.percentage < 30 ? "bg-red-500" : "bg-red-400"}`} 
+                  />
                 </div>
               ))}
             </div>

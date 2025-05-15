@@ -21,79 +21,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-
-// Mock donors data
-const mockDonors = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "(555) 123-4567",
-    bloodType: "O+",
-    lastDonation: "2023-04-15",
-    status: "active",
-    donationsCount: 4,
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    phone: "(555) 987-6543",
-    bloodType: "A-",
-    lastDonation: "2023-03-22",
-    status: "active",
-    donationsCount: 2,
-  },
-  {
-    id: "3",
-    name: "Robert Johnson",
-    email: "robert.johnson@example.com",
-    phone: "(555) 456-7890",
-    bloodType: "B+",
-    lastDonation: "2023-05-01",
-    status: "inactive",
-    donationsCount: 5,
-  },
-  {
-    id: "4",
-    name: "Emily Davis",
-    email: "emily.davis@example.com",
-    phone: "(555) 234-5678",
-    bloodType: "AB+",
-    lastDonation: "2023-01-10",
-    status: "active",
-    donationsCount: 3,
-  },
-  {
-    id: "5",
-    name: "Michael Wilson",
-    email: "michael.wilson@example.com",
-    phone: "(555) 876-5432",
-    bloodType: "O-",
-    lastDonation: "2023-02-28",
-    status: "active",
-    donationsCount: 7,
-  },
-  {
-    id: "6",
-    name: "Sarah Brown",
-    email: "sarah.brown@example.com",
-    phone: "(555) 345-6789",
-    bloodType: "A+",
-    lastDonation: "2023-04-05",
-    status: "inactive",
-    donationsCount: 1,
-  },
-];
+import { useDonors } from "@/contexts/DonorContext";
 
 const DonorsList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [bloodTypeFilter, setBloodTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { donors } = useDonors();
 
-  const filteredDonors = mockDonors.filter((donor) => {
+  const filteredDonors = donors.filter((donor) => {
+    const fullName = `${donor.firstName} ${donor.lastName}`;
     const matchesSearch =
-      donor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       donor.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       donor.phone.includes(searchTerm);
 
@@ -183,7 +122,6 @@ const DonorsList = () => {
               <TableHead>Blood Type</TableHead>
               <TableHead>Last Donation</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Donations</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -192,7 +130,7 @@ const DonorsList = () => {
               filteredDonors.map((donor) => (
                 <TableRow key={donor.id}>
                   <TableCell className="font-medium">
-                    <div>{donor.name}</div>
+                    <div>{donor.firstName} {donor.lastName}</div>
                     <div className="text-sm text-gray-500">{donor.email}</div>
                   </TableCell>
                   <TableCell>
@@ -201,7 +139,7 @@ const DonorsList = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    {new Date(donor.lastDonation).toLocaleDateString()}
+                    {donor.lastDonation ? new Date(donor.lastDonation).toLocaleDateString() : 'N/A'}
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -214,7 +152,6 @@ const DonorsList = () => {
                       {donor.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{donor.donationsCount}</TableCell>
                   <TableCell>
                     <Button variant="ghost" size="sm" asChild>
                       <Link to={`/donors/${donor.id}`}>
@@ -227,7 +164,7 @@ const DonorsList = () => {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
+                <TableCell colSpan={5} className="text-center py-8">
                   <div className="flex flex-col items-center justify-center text-gray-500">
                     <Users className="h-12 w-12 mb-2 opacity-20" />
                     <h3 className="font-medium mb-1">No donors found</h3>
