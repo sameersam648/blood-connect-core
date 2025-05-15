@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Eye, Plus, Search, Users } from "lucide-react";
+import { Eye, Plus, Search, Users, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useDonors } from "@/contexts/DonorContext";
+import { useToast } from "@/components/ui/use-toast";
 
 const DonorsList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,7 +30,8 @@ const DonorsList = () => {
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [bloodTypeFilter, setBloodTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const { donors } = useDonors();
+  const { donors, deleteDonor } = useDonors();
+  const { toast } = useToast();
 
   // Update search field when URL parameter changes
   useEffect(() => {
@@ -50,6 +51,24 @@ const DonorsList = () => {
       searchParams.delete('search');
     }
     setSearchParams(searchParams);
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
+      try {
+        await deleteDonor(id);
+        toast({
+          title: "Success",
+          description: "Donor deleted successfully",
+        });
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete donor",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const filteredDonors = donors.filter((donor) => {
@@ -176,12 +195,23 @@ const DonorsList = () => {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link to={`/donors/${donor.id}`}>
-                        <Eye className="h-4 w-4 mr-1" />
-                        View
-                      </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/donors/${donor.id}`}>
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
+                        </Link>
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleDelete(donor.id, `${donor.firstName} ${donor.lastName}`)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
