@@ -1,5 +1,7 @@
 
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import { useMySQLDatabase } from "@/hooks/useMySQLDatabase";
+import { useToast } from "@/components/ui/use-toast";
 
 // Define the donor type
 export interface Donor {
@@ -22,8 +24,9 @@ export interface Donor {
 
 interface DonorContextType {
   donors: Donor[];
-  addDonor: (donor: Omit<Donor, "id" | "status">) => void;
+  addDonor: (donor: Omit<Donor, "id" | "status">) => Promise<void>;
   getDonorById: (id: string) => Donor | undefined;
+  loading: boolean;
 }
 
 const DonorContext = createContext<DonorContextType | undefined>(undefined);
@@ -102,18 +105,77 @@ const initialDonors: Donor[] = [
 
 export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [donors, setDonors] = useState<Donor[]>(initialDonors);
+  const [loading, setLoading] = useState<boolean>(false);
+  const { toast } = useToast();
+  const { saveDonor, getDonors, updateDonor, deleteDonor } = useMySQLDatabase();
 
-  const addDonor = (donorData: Omit<Donor, "id" | "status">) => {
-    const newDonor: Donor = {
-      ...donorData,
-      id: (donors.length + 1).toString(),
-      status: "active",
+  // Load donors from MySQL database on component mount
+  useEffect(() => {
+    const fetchDonors = async () => {
+      try {
+        setLoading(true);
+        const response = await getDonors();
+        if (response.success && response.donors.length > 0) {
+          setDonors(response.donors);
+        }
+      } catch (error) {
+        console.error("Error fetching donors:", error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch donors from the database.",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
     };
+
+    fetchDonors();
+  }, [getDonors, toast]);
+
+  const addDonor = async (donorData: Omit<Donor, "id" | "status">) => {
+    setLoading(true);
     
-    setDonors((prevDonors) => [...prevDonors, newDonor]);
-    
-    // This is where you would normally make an API call to store in MySQL
-    console.log("New donor added:", newDonor);
+    try {
+      const newDonor: Donor = {
+        ...donorData,
+        id: (donors.length + 1).toString(), // Fallback ID in case MySQL save fails
+        status: "active",
+      };
+      
+      // Save to MySQL database
+      const response = await saveDonor(newDonor);
+      
+      if (response.success) {
+        // Update donor with the ID from database
+        const savedDonor: Donor = {
+          ...newDonor,
+          id: response.id || newDonor.id,
+        };
+        
+        setDonors((prevDonors) => [...prevDonors, savedDonor]);
+        
+        toast({
+          title: "Success",
+          description: "Donor added successfully",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to save donor to database",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error adding donor:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const getDonorById = (id: string) => {
@@ -121,7 +183,7 @@ export const DonorProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   return (
-    <DonorContext.Provider value={{ donors, addDonor, getDonorById }}>
+    <DonorContext.Provider value={{ donors, addDonor, getDonorById, loading }}>
       {children}
     </DonorContext.Provider>
   );

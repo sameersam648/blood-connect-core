@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Eye, Plus, Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,10 +24,33 @@ import { Badge } from "@/components/ui/badge";
 import { useDonors } from "@/contexts/DonorContext";
 
 const DonorsList = () => {
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearchTerm = searchParams.get('search') || "";
+  
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [bloodTypeFilter, setBloodTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const { donors } = useDonors();
+
+  // Update search field when URL parameter changes
+  useEffect(() => {
+    if (searchParams.get('search')) {
+      setSearchTerm(searchParams.get('search') || "");
+    }
+  }, [searchParams]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    
+    // Update URL with search parameter
+    if (value) {
+      searchParams.set('search', value);
+    } else {
+      searchParams.delete('search');
+    }
+    setSearchParams(searchParams);
+  };
 
   const filteredDonors = donors.filter((donor) => {
     const fullName = `${donor.firstName} ${donor.lastName}`;
@@ -72,7 +95,7 @@ const DonorsList = () => {
                 <Input
                   placeholder="Search donors..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={handleSearch}
                   className="pl-9"
                 />
               </div>

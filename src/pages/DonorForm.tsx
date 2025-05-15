@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -24,7 +25,7 @@ import { useDonors } from "@/contexts/DonorContext";
 const DonorForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { addDonor } = useDonors();
+  const { addDonor, loading } = useDonors();
   
   const [formData, setFormData] = useState({
     firstName: "",
@@ -51,19 +52,28 @@ const DonorForm = () => {
     setFormData({ ...formData, [name]: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Add donor to context (which would normally save to MySQL)
-    addDonor(formData);
-    
-    toast({
-      title: "Donor added successfully",
-      description: `${formData.firstName} ${formData.lastName} has been added to the system.`,
-    });
-    
-    // Redirect to donors list
-    navigate("/donors");
+    try {
+      // Add donor to context (which saves to MySQL)
+      await addDonor(formData);
+      
+      toast({
+        title: "Donor added successfully",
+        description: `${formData.firstName} ${formData.lastName} has been added to the system.`,
+      });
+      
+      // Redirect to donors list
+      navigate("/donors");
+    } catch (error) {
+      console.error("Error adding donor:", error);
+      toast({
+        title: "Error",
+        description: "Failed to add donor. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -262,11 +272,16 @@ const DonorForm = () => {
               type="button" 
               variant="outline" 
               onClick={() => navigate("/donors")}
+              disabled={loading}
             >
               Cancel
             </Button>
-            <Button type="submit" className="bg-red-500 hover:bg-red-600">
-              Save Donor
+            <Button 
+              type="submit" 
+              className="bg-red-500 hover:bg-red-600"
+              disabled={loading}
+            >
+              {loading ? "Saving..." : "Save Donor"}
             </Button>
           </CardFooter>
         </form>
